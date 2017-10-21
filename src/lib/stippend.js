@@ -71,6 +71,20 @@ function calcolaBonusRenzi({ redditoPresuntoAnnuo }) {
   }
 }
 
+function calcolaAddizionaleRegionale({ imponibileFiscaleAnno }) {
+  // Si calcola sul "reddito complessivo determinato ai fini IRPEF"
+  // http://www.tributi.regione.lombardia.it/ds/Satellite?c=Page&childpagename=Tributi%2FSitiTematici%2FST_Layout&cid=1213370725849&p=1213369830423&packedargs=areaCorrelata%3DNA%26azioneTributaria%3DPagamento%26introduttivo%3D1213369877560%26nomeTributo%3DAddizionale%2BRegionale%2BIRPEF%26subtype%3DTRBT%252FContenutoTributario%26templateDaVisualizzare%3DContenutoTributarioDettaglio%26voceServizi%3DNo&pagename=TRBTWrapper
+  const tassaAnno = calcolaTassaScaglioni(imponibileFiscaleAnno, [
+    { soglia:     0, tassa: percent(1.23) },
+    { soglia: 15000, tassa: percent(1.58) },
+    { soglia: 28000, tassa: percent(1.72) },
+    { soglia: 55000, tassa: percent(1.73) },
+    { soglia: 75000, tassa: percent(1.74) },
+  ])
+  const tassaMese = tassaAnno / 12
+  return tassaMese
+}
+
 const stippend = traph({
   retribuzioneGiornaliera:     (i, o) => round2(i.lordoMensile / i.giorniRetribuiti),
   lordoMensile:                (i, o) => round2(i.lordoMensile),
@@ -99,7 +113,7 @@ const stippend = traph({
   impostaIrpefLorda:      (i, o) => round2(calcolaTassaIrpef({ imponibileFiscaleAnno: o.imponibileFiscaleAnno })),
   detrazioniIrpef:        (i, o) => round2(calcolaDetrazioniIrpef({ giorniMese: i.giorniMese, lordoAnnuo: o.lordoAnnuo })),
   totIrpef:               (i, o) => o.impostaIrpefLorda - o.detrazioniIrpef,
-  addizionaleRegionale:   (i, o) => 0, // TODO: calcolaAddizionaleRegionale({ imponibileFiscaleAnno: o.imponibileFiscaleAnno }),
+  addizionaleRegionale:   (i, o) => calcolaAddizionaleRegionale({ imponibileFiscaleAnno: o.imponibileFiscaleAnno }),
 
   redditoPresuntoAnnuo:   (i, o) => o.imponibileFiscaleMese * 14,
   bonusRenzi:             (i, o) => calcolaBonusRenzi({ redditoPresuntoAnnuo: o.redditoPresuntoAnnuo }),
