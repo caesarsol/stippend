@@ -27,7 +27,8 @@ function calcolaTassaScaglioni(valore, scaglioni) {
 
 function calcolaTassaIrpef({ imponibileFiscaleAnno }) {
   const tassatoAnno = calcolaTassaScaglioni(imponibileFiscaleAnno, [
-    { soglia:     0, tassa: percent(23) },
+    { soglia:     0, tassa: percent(0) },
+    { soglia:  5000, tassa: percent(23) },
     { soglia: 15000, tassa: percent(27) },
     { soglia: 28000, tassa: percent(38) },
     { soglia: 55000, tassa: percent(41) },
@@ -59,7 +60,7 @@ function calcolaContributiFapInps({ apprendistato, previdenzialeArrotondato }) {
 }
 
 function calcolaBonusRenzi({ redditoPresuntoAnnuo }) {
-  // TODO: Check
+  // TODO: Check calcoli
   // const bonusFull = 80.00
   const bonusFull = 81.53 // WHY? :'(
   if (redditoPresuntoAnnuo <= 24000) {
@@ -115,7 +116,7 @@ const stippend = traph({
   totIrpef:               (i, o) => o.impostaIrpefLorda - o.detrazioniIrpef,
   addizionaleRegionale:   (i, o) => calcolaAddizionaleRegionale({ imponibileFiscaleAnno: o.imponibileFiscaleAnno }),
 
-  redditoPresuntoAnnuo:   (i, o) => o.imponibileFiscaleMese * 14,
+  redditoPresuntoAnnuo:   (i, o) => o.imponibileFiscaleMese * i.mensilitaAnno,
   bonusRenzi:             (i, o) => calcolaBonusRenzi({ redditoPresuntoAnnuo: o.redditoPresuntoAnnuo }),
 
   /* TOTALI */
@@ -127,6 +128,10 @@ const stippend = traph({
                       o.addizionaleRegionale,
   competenze: (i, o) => o.previdenziale + o.bonusRenzi,
   nettoMensile: (i, o) => round2(o.competenze - o.ritenute),
+
+  // A fini statistici:
+  nettoSenzaBonus: (i, o) => o.nettoMensile - o.bonusRenzi,
+  percentualeTasse: (i, o) => (i.lordoMensile - o.nettoMensile) / i.lordoMensile,
 })
 
 export default stippend
