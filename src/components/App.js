@@ -1,24 +1,12 @@
 import React from 'react'
 import { Viz, SubViz, injectRescale } from 'react-dataviz'
 import { range } from 'lodash/fp'
+import { mapValues } from 'lodash'
 import { scaleLinear } from 'd3-scale'
 import stippend from 'lib/stippend'
 import numeral from 'numeral'
 
-function stip(lordoMensile) {
-  return stippend({
-    lordoMensile,
-    lordoMensilePagaBase: 0,
-    lordoMensileContingenza: 0,
-    giorniMese: 31,
-    giorniRetribuiti: 26,
-    mensilitaAnno: 14,
-    festivitaNonGodute: 0,
-    apprendistato: false,
-  })
-}
-
-const DataPolyline = injectRescale(function XScale({ rescale, scales, dataSeries, x = 'x', y = 'y', scaleX = x, scaleY = y, ...props }) {
+const DataPolyline = injectRescale(function DataPolylineRescaled({ rescale, scales, dataSeries, x = 'x', y = 'y', scaleX = x, scaleY = y, ...props }) {
   const dataPoints = dataSeries.map(d => [
     rescale.x(scales[scaleX](d[x])),
     rescale.y(scales[scaleY](d[y])),
@@ -35,7 +23,7 @@ const DataPolyline = injectRescale(function XScale({ rescale, scales, dataSeries
   )
 })
 
-const Axis = injectRescale(function Axis({ rescale, scale, ticks = 5, position = 'l', offset = 10, color = 'black', grid = false, format = '0' }) {
+const Axis = injectRescale(function AxisRescaled({ rescale, scale, ticks = 5, position = 'l', offset = 10, color = 'black', grid = false, format = '0', postfix = '' }) {
   const possiblePositions = {
     b: { x: t => rescale.x(scale(t)), y: t => rescale.y(0) + offset },
     l: { x: t => rescale.x(0) - offset, y: t => rescale.y(scale(t)) },
@@ -70,8 +58,8 @@ const Axis = injectRescale(function Axis({ rescale, scale, ticks = 5, position =
     <g className="-scale">
       {scale.ticks(ticks).map(t => (
         <g key={t}>
-          <text x={pos.x(t)} y={pos.y(t)} fontFamily="sans-serif" fill={color} {...tickAnchor}>
-            {numeral(t).format(format)}
+          <text x={pos.x(t)} y={pos.y(t)} fontFamily="sans-serif" fontSize="13" fill={color} {...tickAnchor}>
+            {numeral(t).format(format)}{postfix}
           </text>
 
           {grid && (
@@ -106,8 +94,8 @@ function fastScales(dataSeries, opts = {}) {
         extentsAcc[k] = [v, v]
       } else {
         let [min, max] = extentsAcc[k]
-        if (opts.forceMin && k in opts.forceMin) min = opts.forceMin[k]
-        if (opts.forceMax && k in opts.forceMax) min = opts.forceMax[k]
+        if (k in opts && 'min' in opts[k]) min = opts[k].min
+        if (k in opts && 'max' in opts[k]) max = opts[k].max
         extentsAcc[k] = [Math.min(v, min), Math.max(v, max)]
       }
     })
@@ -124,47 +112,154 @@ function FixProps({ children, ...props }) {
   return React.Children.map(children, child => React.cloneElement(child, props))
 }
 
+function Chart() {
+  const xs = range(1, 5 + 1).map(n => n * 1e3)
+  const dataSeries = xs.map(lordoMensile => ({
+    lordoMensile,
+    ...stippend({
+      lordoMensile,
+      lordoMensilePagaBase: 0,
+      lordoMensileContingenza: 0,
+      giorniMese: 31,
+      giorniRetribuiti: 26,
+      mensilitaAnno: 14,
+      festivitaNonGodute: 0,
+      apprendistato: false,
+    }),
+  })).filter(({ nettoMensile }) => nettoMensile >= 1e3 && nettoMensile <= 5e3)
+  const scales = fastScales(dataSeries, {
+    nettoMensile: { min: 1e3, max: 5e3 },
+  })
+
+  return (
+    <Viz>
+      <SubViz from={[0, 0]} to={[1, 1]} flipY margin={80}>
+        {/* <Axis position="b" scale={scales.lordoAnnuo} offset={30} format="0[.]0a" postfix=" RAL" color="steelblue" /> */}
+        <Axis position="b" grid scale={scales.lordoMensile} format="0[.]0a" postfix="/M lrd" />
+        <Axis position="l" grid scale={scales.nettoMensile} format="0[.]0a" postfix="/M net" />
+
+        <FixProps dataSeries={dataSeries} scales={scales} x="lordoAnnuo" scaleY="nettoMensile">
+          <DataPolyline y="nettoSenzaBonus" stroke="blue" />
+          <DataPolyline y="nettoMensile" stroke="steelblue" />
+        </FixProps>
+      </SubViz>
+    </Viz>
+  )
+}
+
+function eventValueExtractor(fn) {
+  return (e) => fn(e.target.value)
+}
+
+function buildSetState(that, stateSlice) {
+  if (typeof stateSlice === 'string') return (a) => that.setState({ [stateSlice]: a })
+  if (typeof stateSlice === 'function') return (...a) => that.setState(stateSlice(...a))
+  return () => that.setState(stateSlice)
+}
+
+const fieldMap = {
+  lordoAnnuo:                `RAL (Reddito Annuo Lordo)`,
+  lordoMensile:              `Lordo mensile`,
+  lordoMensilePagaBase:      `Paga base (Lordo mensile)`,
+  lordoMensileContingenza:   `Contingenza (Lordo mensile)`,
+  importoFestivitaNonGodute: `Importo festività non godute`,
+  giorniMese:                `Giorni del mese totali`,
+  giorniRetribuiti:          `Giorni lavorativi del mese`,
+  mensilitaAnno:             `Mensilità annue`,
+  festivitaNonGodute:        `Festività non godute`,
+  apprendistato:             `Apprendistato?`,
+
+  retribuzioneGiornaliera:   `Retribuzione giornaliera`,
+  previdenziale:             `Previdenziale non arrotondato`,
+  previdenzialeArrotondato:  `Previdenziale arrotondato`,
+
+  contributoFap:             `Contributo FAP (INPS)`,
+  fondoEst:                  `Fondo EST c/o dipendente`,
+  totRitenuteSociali:       `Totale ritenute sociali (INPS)`,
+
+  imponibileFiscaleMese:    `Imponibile fiscale mese`,
+  impostaIrpefLorda:        `Imposta IRPEF lorda`,
+  detrazioniIrpef:          `Detrazioni IRPEF`,
+  totIrpef:                 `Totale IRPEF (cod 1001)`,
+
+  redditoPresuntoAnnuo:     `Reddito presunto annuo (per Bonus Renzi)`,
+  bonusRenzi:               `Bonus Renzi (art 1 DL 66/2014)`,
+
+  ritenute:                 `Ritenute`,
+  competenze:               `Competenze`,
+  nettoMensile:             `Stipendio netto`,
+}
+
+function toNumberIfNumber(v) {
+  const n = parseFloat(v)
+  console.log(String(n), String(v), String(n) === String(v))
+  if (String(n) === String(v)) return n
+  return v
+}
+
 export default class App extends React.Component {
+  state = {
+    lordoMensile: 2000,
+    lordoMensilePagaBase: 0,
+    lordoMensileContingenza: 0,
+    giorniMese: 31,
+    giorniRetribuiti: 26,
+    mensilitaAnno: 14,
+    festivitaNonGodute: 0,
+    apprendistato: 0,
+  }
+
   render() {
-    const xs = range(10, 80 + 1).map(n => n * 1000 / 14)
-    const dataSeries = xs.map((x) => ({ lordoMensile: x, ...stip(x) }))
-    const scales = fastScales(dataSeries, {
-      forceMin: { nettoMensile: 0 },
-    })
+    const input = this.state
+    const output = stippend(mapValues(input, toNumberIfNumber))
 
     return (
-      <div>
-        <h2 style={{ fontFamily: 'sans-serif' }}>Stippend</h2>
+      <div style={{ fontFamily: 'sans-serif' }}>
+        <h1>
+          Stippend
+        </h1>
 
-        <Viz height="500">
-          <SubViz from={[0, 0]} to={[1, 1]} flipY margin={80}>
-            <Axis position="b" scale={scales.lordoAnnuo} offset={30} format="0a" />
-            <Axis position="b" grid scale={scales.lordoMensile} format="0a" color="steelblue" />
-            <Axis position="l" grid scale={scales.nettoMensile} format="0[.]0a" color="steelblue" />
+        <div style={{ display: 'flex' }}>
+          <div style={{ width: '50%' }}>
+            <h2>Input</h2>
 
-            {rescale => (
-              <polyline
-                points={[rescale.x(scales.lordoAnnuo(36e3)), rescale.y(0), rescale.x(scales.lordoAnnuo(36e3)), rescale.y(1)].join(',')}
-                fill="none"
-                stroke="rgba(255, 255, 0, 0.3)"
-                strokeWidth="3"
-              />
-            )}
+            {Object.keys(input).map((k, i) => (
+              <div key={k} style={{ padding: '0.5em 0' }}>
+                <label>
+                  <div><strong>{fieldMap[k]}</strong></div>
+                  <input
+                    type="number"
+                    value={input[k]}
+                    onChange={eventValueExtractor(buildSetState(this, k))}
+                    style={{ width: '90%', height: '1em', fontSize: 'inherit' }}
+                  />
+                </label>
+              </div>
+            ))}
+          </div>
 
-            <FixProps dataSeries={dataSeries} scales={scales} x="lordoAnnuo" scaleY="nettoMensile">
-              <DataPolyline y="nettoSenzaBonus" stroke="blue" />
-              <DataPolyline y="nettoMensile" stroke="steelblue" />
+          <div style={{ width: '50%' }}>
+            <h2>Output</h2>
 
-              <DataPolyline y="competenze" stroke="green" />
-              <DataPolyline y="ritenute" stroke="red" />
-              <DataPolyline y="impostaIrpefLorda" stroke="magenta" />
-              <DataPolyline y="contributoFap" stroke="magenta" />
-            </FixProps>
+            {Object.keys(output).map((k, i) => (
+              fieldMap[k]
+                ? (
+                  <div key={k} style={{ background: i % 2 ? 'white' : '#f9f9f9', padding: '0.5em' }}>
+                    <div style={{ display: 'inline-block', width: '50%' }}>
+                      <strong>{fieldMap[k]}</strong>
+                    </div>
+                    <div style={{ display: 'inline-block', width: '50%' }}>
+                      {output[k].toFixed(2)}
+                    </div>
+                  </div>
+                ) : null
+            ))}
+          </div>
+        </div>
 
-            <Axis scale={scales.percentualeTasse} position="r" format="0%" color="gold" />
-            <DataPolyline dataSeries={dataSeries} scales={scales} x="lordoAnnuo" y="percentualeTasse" stroke="gold" />
-          </SubViz>
-        </Viz>
+        <div style={{ width: '50vw', height: '50vw' }}>
+          <Chart />
+        </div>
       </div>
     )
   }
