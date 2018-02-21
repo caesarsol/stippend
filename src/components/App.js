@@ -215,9 +215,10 @@ export default class App extends React.Component {
 
     return (
       <div style={{ fontFamily: 'sans-serif' }}>
-        <h1>
-          Stippend
+        <h1 style={{ marginBottom: 0 }}>
+          stippend – stima stipendio
         </h1>
+        <small>CCNL Commercio</small>
 
         <div style={{ display: 'flex' }}>
           <div style={{ width: '50%' }}>
@@ -241,18 +242,15 @@ export default class App extends React.Component {
           <div style={{ width: '50%' }}>
             <h2>Output</h2>
 
-            {Object.keys(output).map((k, i) => (
-              fieldMap[k]
-                ? (
-                  <div key={k} style={{ background: i % 2 ? 'white' : '#f9f9f9', padding: '0.5em' }}>
-                    <div style={{ display: 'inline-block', width: '50%' }}>
-                      <strong>{fieldMap[k]}</strong>
-                    </div>
-                    <div style={{ display: 'inline-block', width: '50%' }}>
-                      {output[k].toFixed(2)}
-                    </div>
-                  </div>
-                ) : null
+            {Object.keys(output).filter(k => fieldMap[k]).map((k, i) => (
+              <div key={k} style={{ background: i % 2 ? 'white' : '#f9f9f9', padding: '0.5em' }}>
+                <div style={{ display: 'inline-block', width: '50%' }}>
+                  <strong>{fieldMap[k]}</strong>
+                </div>
+                <div style={{ display: 'inline-block', width: '50%' }}>
+                  {output[k].toFixed(2)}
+                </div>
+              </div>
             ))}
           </div>
         </div>
