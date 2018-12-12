@@ -190,9 +190,13 @@ const fieldMap = {
   nettoMensile:             `Stipendio netto`,
 }
 
+function zeroize(v) {
+  if (!v) return 0
+  else return v
+}
+
 function toNumberIfNumber(v) {
   const n = parseFloat(v)
-  console.log(String(n), String(v), String(n) === String(v))
   if (String(n) === String(v)) return n
   return v
 }
@@ -211,7 +215,7 @@ export default class App extends React.Component {
 
   render() {
     const input = this.state
-    const output = stippend(mapValues(input, toNumberIfNumber))
+    const output = stippend(mapValues(input, (x) => zeroize(toNumberIfNumber(x))))
 
     return (
       <div style={{ fontFamily: 'sans-serif' }}>
