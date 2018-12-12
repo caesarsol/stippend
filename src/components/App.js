@@ -160,8 +160,8 @@ function buildSetState(that, stateSlice) {
 const fieldMap = {
   lordoAnnuo:                `RAL (Reddito Annuo Lordo)`,
   lordoMensile:              `Lordo mensile`,
-  lordoMensilePagaBase:      `Paga base (Lordo mensile)`,
-  lordoMensileContingenza:   `Contingenza (Lordo mensile)`,
+  lordoMensilePagaBase:      `Paga base lorda mensile [OPZIONALE]`,
+  lordoMensileContingenza:   `Contingenza lorda mensile [OPZIONALE]`,
   importoFestivitaNonGodute: `Importo festività non godute`,
   giorniMese:                `Giorni del mese totali`,
   giorniRetribuiti:          `Giorni lavorativi del mese`,
