@@ -25,15 +25,17 @@ function calcolaTassaScaglioni(valore, scaglioni) {
   }, 0)
 }
 
-function calcolaTassaIrpef({ imponibileFiscaleAnno }) {
-  const tassatoAnno = calcolaTassaScaglioni(imponibileFiscaleAnno, [
-    { soglia:     0, tassa: percent(0) },
-    { soglia:  5000, tassa: percent(23) },
+const SCAGLIONI = [
+  { soglia:     0, tassa: percent(23) },
     { soglia: 15000, tassa: percent(27) },
     { soglia: 28000, tassa: percent(38) },
     { soglia: 55000, tassa: percent(41) },
     { soglia: 75000, tassa: percent(43) },
-  ])
+]
+
+function calcolaTassaIrpef({ imponibileFiscaleAnno }) {
+  if (imponibileFiscaleAnno <= 5000) return 0
+  const tassatoAnno = calcolaTassaScaglioni(imponibileFiscaleAnno, SCAGLIONI)
   const tassatoMese = tassatoAnno / 12
   return tassatoMese
 }
