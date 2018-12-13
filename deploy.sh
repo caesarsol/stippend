@@ -20,6 +20,7 @@ yarn build
 
 git clone -b "$BRANCH" "$REPO_DIR" "$TMP_DIR"
 cp -R -v "$REPO_DIR"/build/* "$TMP_DIR"
+git -C "$TMP_DIR" add .
 git -C "$TMP_DIR" commit -m "$VERSION [$COMMIT]"
 git -C "$TMP_DIR" push origin "$BRANCH" # Local push to $REPO_DIR
 
