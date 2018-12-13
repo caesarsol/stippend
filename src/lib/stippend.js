@@ -27,10 +27,10 @@ function calcolaTassaScaglioni(valore, scaglioni) {
 
 const SCAGLIONI = [
   { soglia:     0, tassa: percent(23) },
-    { soglia: 15000, tassa: percent(27) },
-    { soglia: 28000, tassa: percent(38) },
-    { soglia: 55000, tassa: percent(41) },
-    { soglia: 75000, tassa: percent(43) },
+  { soglia: 15000, tassa: percent(27) },
+  { soglia: 28000, tassa: percent(38) },
+  { soglia: 55000, tassa: percent(41) },
+  { soglia: 75000, tassa: percent(43) },
 ]
 
 function calcolaTassaIrpef({ imponibileFiscaleAnno }) {
@@ -136,4 +136,5 @@ const stippend = traph({
   percentualeTasse: (i, o) => (i.lordoMensile - o.nettoMensile) / i.lordoMensile,
 })
 
-export default stippend
+module.exports = stippend
+module.exports.calcolaTassaIrpef = calcolaTassaIrpef
